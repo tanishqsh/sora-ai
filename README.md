@@ -33,3 +33,4 @@ A sleek, futuristic interface for a fan engagement platform inspired by Sora AI.
 ## License
 
 MIT
+# sora-ai
