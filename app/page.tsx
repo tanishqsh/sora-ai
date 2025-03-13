@@ -2,7 +2,7 @@
 
 import InteractiveASCII from '@/components/InteractiveASCII';
 import ASCII_ART from '@/components/InteractiveASCII/constants';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
 	useEffect(() => {
 		const triggerRandomGlitch = () => {
 			// Random time between 2-10 seconds for next glitch
-			const nextGlitchTime = Math.random() * 8000 + 2000;
+			const nextGlitchTime = Math.random() * 100;
 
 			// Clear any existing timeout
 			if (glitchTimeoutRef.current) {
@@ -29,7 +29,7 @@ export default function Home() {
 				setTimeout(() => {
 					setGlitchActive(false);
 					triggerRandomGlitch(); // Schedule next glitch
-				}, Math.random() * 400 + 100);
+				}, Math.random() * 300 + 100);
 			}, nextGlitchTime);
 		};
 
@@ -49,7 +49,7 @@ export default function Home() {
 			<div className='p-8 bg-black/10 h-screen w-full flex items-center justify-center z-10 relative'>
 				{/* Main container with thinner border and subtle shadow */}
 				<motion.div
-					className='p-8 bg-black/100 rounded-md relative overflow-hidden shadow-lg max-w-3xl w-full'
+					className='p-8 bg-black/90 rounded-md relative overflow-hidden shadow-lg max-w-lg w-full'
 					initial={{ opacity: 0, scale: 0.95 }}
 					animate={{ opacity: 1, scale: 1 }}
 					transition={{
@@ -112,7 +112,7 @@ export default function Home() {
 
 									{/* Blue glitch block */}
 									<motion.div
-										className='absolute h-[1px] bg-blue-500/70'
+										className='absolute h-[1px] bg-green-500/70'
 										initial={{
 											left: `${Math.random() * 100}%`,
 											right: `${Math.random() * 20}%`,
@@ -129,7 +129,7 @@ export default function Home() {
 
 									{/* Cyan glitch block */}
 									<motion.div
-										className='absolute w-[5px] bg-cyan-500/50'
+										className='absolute w-[5px] bg-green-500/50'
 										initial={{
 											top: `${Math.random() * 100}%`,
 											bottom: `${Math.random() * 30}%`,
@@ -189,22 +189,23 @@ export default function Home() {
 
 							{/* Subtitle with minimal styling */}
 							<motion.p
-								className='font-mono text-xl font-light tracking-wide text-green-300'
+								className='font-mono text-lg font-medium tracking-wide text-white'
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								transition={{ duration: 0.8, delay: 0.6 }}
 							>
-								Sora is advancing the future of fan engagement
+								We are Sora. Building at the intersection of passion and technology, we craft experiences that change how fans connect with what
+								they love.
 							</motion.p>
+							{/* <motion.p
+								className='font-mono mt-8 text-base font-light tracking-wide text-white'
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								transition={{ duration: 0.8, delay: 0.6 }}
+							>
+								نحن سورا. نبني عند تقاطع الشغف والتكنولوجيا، نصمم تجارب تغير طريقة تواصل المشجعين مع ما يحبون
+							</motion.p> */}
 						</motion.div>
-
-						{/* Thin separator line */}
-						<motion.div
-							className='h-[1px] w-full bg-gradient-to-r from-transparent via-white/30 to-transparent mb-10'
-							initial={{ scaleX: 0, opacity: 0 }}
-							animate={{ scaleX: 1, opacity: 1 }}
-							transition={{ duration: 0.8, delay: 0.7 }}
-						/>
 
 						{/* Sleek content section */}
 						<motion.div className='relative' initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.8 }}>
@@ -212,7 +213,7 @@ export default function Home() {
 							<div className='relative z-10 font-mono'>
 								{/* Minimal terminal output with random text */}
 								<motion.div
-									className='border-l border-cyan-500/30 pl-4 font-mono text-sm text-white/70 space-y-2'
+									className='border-l border-green-500/30 pl-4 font-mono text-sm text-white/70 space-y-2'
 									initial={{ x: -10, opacity: 0 }}
 									animate={{ x: 0, opacity: 1 }}
 									transition={{ duration: 0.5, delay: 1 }}
@@ -306,20 +307,23 @@ function RandomSystemPrompt() {
 	const [prompt, setPrompt] = useState('');
 	const [key, setKey] = useState(0); // Key for AnimatePresence
 
-	const systemPrompts = [
-		'> System ready. All subsystems nominal.',
-		'> Neural network optimization complete.',
-		'> Analyzing user engagement patterns...',
-		'> Content delivery systems operating at 98.7% efficiency.',
-		'> Deploying enhanced recommendation algorithms.',
-		'> Security protocols updated to version 3.4.2.',
-		'> Predictive analytics module initialized.',
-		'> User satisfaction metrics exceeding expectations.',
-		'> Synchronizing distributed data nodes...',
-		'> AI-driven content curation active.',
-		'> Quantum processing units online.',
-		'> Biometric authentication systems engaged.',
-	];
+	const systemPrompts = useMemo(
+		() => [
+			'> System ready. All subsystems nominal.',
+			'> Neural network optimization complete.',
+			'> Analyzing user engagement patterns...',
+			'> Content delivery systems operating at 98.7% efficiency.',
+			'> Deploying enhanced recommendation algorithms.',
+			'> Security protocols updated to version 3.4.2.',
+			'> Predictive analytics module initialized.',
+			'> User satisfaction metrics exceeding expectations.',
+			'> Synchronizing distributed data nodes...',
+			'> AI-driven content curation active.',
+			'> Quantum processing units online.',
+			'> Biometric authentication systems engaged.',
+		],
+		[]
+	);
 
 	useEffect(() => {
 		// Set initial random prompt
@@ -333,7 +337,7 @@ function RandomSystemPrompt() {
 
 		// Clean up interval
 		return () => clearInterval(interval);
-	}, []);
+	}, [systemPrompts]);
 
 	// Character animation variants
 	const container = {
