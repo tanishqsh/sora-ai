@@ -105,37 +105,6 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 		}
 	}, [initAsciiChars]);
 
-	// Throttled resize handler - no dependencies on state
-	const handleResize = useCallback(
-		throttle(() => {
-			updateCanvasSize();
-		}, 200), // Throttle resize events heavily
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[updateCanvasSize]
-	);
-
-	// Throttled mouse move handler to reduce event processing
-	const handleMouseMove = useCallback(
-		throttle((e: MouseEvent) => {
-			mousePosRef.current = { x: e.clientX, y: e.clientY };
-			isMouseInCanvasRef.current = true;
-		}, 16), // ~60fps throttle rate for mouse movement
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[]
-	);
-
-	// Throttled touch move handler
-	const handleTouchMove = useCallback(
-		throttle((e: TouchEvent) => {
-			if (e.touches.length > 0) {
-				mousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-				isMouseInCanvasRef.current = true;
-			}
-		}, 16),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[]
-	);
-
 	// Effect to initialize canvas and handle resize
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -144,14 +113,19 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 		// Initial canvas setup
 		updateCanvasSize();
 
+		// Create throttled resize function
+		const throttledResize = throttle(() => {
+			updateCanvasSize();
+		}, 200);
+
 		// Add resize listener
-		window.addEventListener('resize', handleResize);
+		window.addEventListener('resize', throttledResize);
 
 		return () => {
-			window.removeEventListener('resize', handleResize);
-			handleResize.cancel();
+			window.removeEventListener('resize', throttledResize);
+			throttledResize.cancel();
 		};
-	}, [handleResize, updateCanvasSize]);
+	}, [updateCanvasSize]);
 
 	// Effect for mouse/touch events
 	useEffect(() => {
@@ -170,25 +144,38 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 			isMouseInCanvasRef.current = false;
 		};
 
+		// Create throttled handlers
+		const throttledMouseMove = throttle((e: MouseEvent) => {
+			mousePosRef.current = { x: e.clientX, y: e.clientY };
+			isMouseInCanvasRef.current = true;
+		}, 16);
+
+		const throttledTouchMove = throttle((e: TouchEvent) => {
+			if (e.touches.length > 0) {
+				mousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+				isMouseInCanvasRef.current = true;
+			}
+		}, 16);
+
 		// Add event listeners
-		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mousemove', throttledMouseMove);
 		canvas.addEventListener('mouseenter', handleMouseEnter);
 		canvas.addEventListener('mouseleave', handleMouseLeave);
-		window.addEventListener('touchmove', handleTouchMove, { passive: true });
+		window.addEventListener('touchmove', throttledTouchMove, { passive: true });
 		window.addEventListener('touchend', handleTouchEnd);
 
 		return () => {
-			window.removeEventListener('mousemove', handleMouseMove);
+			window.removeEventListener('mousemove', throttledMouseMove);
 			canvas.removeEventListener('mouseenter', handleMouseEnter);
 			canvas.removeEventListener('mouseleave', handleMouseLeave);
-			window.removeEventListener('touchmove', handleTouchMove);
+			window.removeEventListener('touchmove', throttledTouchMove);
 			window.removeEventListener('touchend', handleTouchEnd);
 
 			// Clean up throttled functions
-			handleMouseMove.cancel();
-			handleTouchMove.cancel();
+			throttledMouseMove.cancel();
+			throttledTouchMove.cancel();
 		};
-	}, [handleMouseMove, handleTouchMove]);
+	}, []);
 
 	// Animation effect
 	useEffect(() => {
