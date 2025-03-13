@@ -186,8 +186,8 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 		if (!ctx) return;
 
 		// Pre-calculate square boundaries
-		const halfWidth = cursorSquareWidth / 2;
-		const halfHeight = cursorSquareHeight / 2;
+		const halfWidth = cursorSquareWidth / 2.5;
+		const halfHeight = cursorSquareHeight;
 
 		const animate = (timestamp: number) => {
 			// Implement frame rate limiting
