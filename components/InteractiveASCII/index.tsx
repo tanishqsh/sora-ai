@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { throttle } from 'lodash';
 
 interface AsciiChar {
@@ -110,6 +110,7 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 		throttle(() => {
 			updateCanvasSize();
 		}, 200), // Throttle resize events heavily
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[updateCanvasSize]
 	);
 
@@ -119,6 +120,7 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 			mousePosRef.current = { x: e.clientX, y: e.clientY };
 			isMouseInCanvasRef.current = true;
 		}, 16), // ~60fps throttle rate for mouse movement
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[]
 	);
 
@@ -130,6 +132,7 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 				isMouseInCanvasRef.current = true;
 			}
 		}, 16),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[]
 	);
 

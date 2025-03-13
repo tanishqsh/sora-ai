@@ -384,12 +384,14 @@ function RandomSystemPrompt() {
 	};
 
 	return (
-		<motion.div key={key} className='text-green-400/90 overflow-hidden' variants={container} initial='hidden' animate='visible' exit='exit'>
-			{prompt.split('').map((char, index) => (
-				<motion.span key={index} variants={child} style={{ display: 'inline-block' }} className={char === ' ' ? 'w-2' : ''}>
-					{char}
-				</motion.span>
-			))}
-		</motion.div>
+		<AnimatePresence mode='wait'>
+			<motion.div key={key} className='text-green-400/90 overflow-hidden' variants={container} initial='hidden' animate='visible' exit='exit'>
+				{prompt.split('').map((char, index) => (
+					<motion.span key={index} variants={child} style={{ display: 'inline-block' }} className={char === ' ' ? 'w-2' : ''}>
+						{char}
+					</motion.span>
+				))}
+			</motion.div>
+		</AnimatePresence>
 	);
 }
