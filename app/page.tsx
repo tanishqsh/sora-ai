@@ -6,46 +6,10 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
-	// State for random glitch effects
-	const [glitchActive, setGlitchActive] = useState(false);
-	const glitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	// Audio-related state
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const [isMuted, setIsMuted] = useState(true);
 	const [hasInteracted, setHasInteracted] = useState(false);
-
-	// Trigger random glitches
-	useEffect(() => {
-		const triggerRandomGlitch = () => {
-			// Random time between 2-10 seconds for next glitch
-			const nextGlitchTime = Math.random() * 100;
-
-			// Clear any existing timeout
-			if (glitchTimeoutRef.current) {
-				clearTimeout(glitchTimeoutRef.current);
-			}
-
-			// Schedule next glitch
-			glitchTimeoutRef.current = setTimeout(() => {
-				setGlitchActive(true);
-
-				// Turn off glitch after 100-500ms
-				setTimeout(() => {
-					setGlitchActive(false);
-					triggerRandomGlitch(); // Schedule next glitch
-				}, Math.random() * 300 + 100);
-			}, nextGlitchTime);
-		};
-
-		// Start the glitch cycle
-		triggerRandomGlitch();
-
-		// Cleanup
-		return () => {
-			if (glitchTimeoutRef.current) {
-				clearTimeout(glitchTimeoutRef.current);
-			}
-		};
-	}, []);
 
 	// Play static sound when component mounts
 	useEffect(() => {
@@ -222,81 +186,6 @@ export default function Home() {
 							className='absolute inset-0 bg-[linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))]'
 							style={{ mixBlendMode: 'color' }}
 						></div>
-
-						{/* Random color glitch blocks */}
-						<AnimatePresence>
-							{glitchActive && (
-								<>
-									{/* Red glitch block */}
-									<motion.div
-										className='absolute h-[2px] bg-red-500/70'
-										initial={{
-											left: `${Math.random() * 100}%`,
-											right: `${Math.random() * 30}%`,
-											top: `${Math.random() * 100}%`,
-											opacity: 0,
-										}}
-										animate={{
-											opacity: [0, 1, 0.7, 1, 0],
-											x: [0, Math.random() * 10 - 5, Math.random() * 20 - 10, 0],
-										}}
-										transition={{ duration: 0.4 }}
-										style={{ mixBlendMode: 'screen' }}
-									/>
-
-									{/* Green glitch block */}
-									<motion.div
-										className='absolute h-[3px] bg-green-500/70'
-										initial={{
-											left: `${Math.random() * 100}%`,
-											right: `${Math.random() * 40}%`,
-											top: `${Math.random() * 100}%`,
-											opacity: 0,
-										}}
-										animate={{
-											opacity: [0, 0.8, 0.2, 0.9, 0],
-											x: [0, Math.random() * 15 - 7, Math.random() * 25 - 12, 0],
-										}}
-										transition={{ duration: 0.3, delay: 0.05 }}
-										style={{ mixBlendMode: 'screen' }}
-									/>
-
-									{/* Blue glitch block */}
-									<motion.div
-										className='absolute h-[1px] bg-green-500/70'
-										initial={{
-											left: `${Math.random() * 100}%`,
-											right: `${Math.random() * 20}%`,
-											top: `${Math.random() * 100}%`,
-											opacity: 0,
-										}}
-										animate={{
-											opacity: [0, 0.7, 0.3, 0.8, 0],
-											x: [0, Math.random() * 8 - 4, Math.random() * 15 - 7, 0],
-										}}
-										transition={{ duration: 0.5, delay: 0.1 }}
-										style={{ mixBlendMode: 'screen' }}
-									/>
-
-									{/* Cyan glitch block */}
-									<motion.div
-										className='absolute w-[5px] bg-green-500/50'
-										initial={{
-											top: `${Math.random() * 100}%`,
-											bottom: `${Math.random() * 30}%`,
-											left: `${Math.random() * 100}%`,
-											opacity: 0,
-										}}
-										animate={{
-											opacity: [0, 0.6, 0.2, 0.7, 0],
-											y: [0, Math.random() * 10 - 5, Math.random() * 20 - 10, 0],
-										}}
-										transition={{ duration: 0.35 }}
-										style={{ mixBlendMode: 'screen' }}
-									/>
-								</>
-							)}
-						</AnimatePresence>
 
 						{/* CRT vignette effect */}
 						<div
