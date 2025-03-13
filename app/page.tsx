@@ -132,36 +132,6 @@ export default function Home() {
 					)}
 				</motion.button>
 
-				{/* Audio prompt for first-time visitors */}
-				{!hasInteracted && (
-					<motion.div
-						className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-black/80 p-4 rounded-lg text-white text-center max-w-xs'
-						initial={{ opacity: 0, scale: 0.9 }}
-						animate={{ opacity: 1, scale: 1 }}
-						transition={{ delay: 2, duration: 0.5 }}
-						exit={{ opacity: 0, scale: 0.9 }}
-					>
-						<p className='text-sm font-mono mb-2'>Click anywhere to experience with audio</p>
-						<div className='flex justify-center space-x-1'>
-							{[1, 2, 3].map((i) => (
-								<motion.div
-									key={i}
-									className='w-1.5 h-1.5 bg-green-500 rounded-full'
-									animate={{
-										opacity: [0.3, 1, 0.3],
-										scale: [0.8, 1.2, 0.8],
-									}}
-									transition={{
-										duration: 1.5,
-										repeat: Infinity,
-										delay: i * 0.2,
-									}}
-								/>
-							))}
-						</div>
-					</motion.div>
-				)}
-
 				{/* Main container with thinner border and subtle shadow */}
 				<motion.div
 					className='p-8 bg-black/90 rounded-md relative overflow-hidden shadow-lg max-w-lg w-full'
@@ -414,14 +384,12 @@ function RandomSystemPrompt() {
 	};
 
 	return (
-		<AnimatePresence mode='wait'>
-			<motion.div key={key} className='text-green-400/90 overflow-hidden' variants={container} initial='hidden' animate='visible' exit='exit'>
-				{prompt.split('').map((char, index) => (
-					<motion.span key={index} variants={child} style={{ display: 'inline-block' }} className={char === ' ' ? 'w-2' : ''}>
-						{char}
-					</motion.span>
-				))}
-			</motion.div>
-		</AnimatePresence>
+		<motion.div key={key} className='text-green-400/90 overflow-hidden' variants={container} initial='hidden' animate='visible' exit='exit'>
+			{prompt.split('').map((char, index) => (
+				<motion.span key={index} variants={child} style={{ display: 'inline-block' }} className={char === ' ' ? 'w-2' : ''}>
+					{char}
+				</motion.span>
+			))}
+		</motion.div>
 	);
 }
