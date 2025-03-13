@@ -9,6 +9,9 @@ export default function Home() {
 	// State for random glitch effects
 	const [glitchActive, setGlitchActive] = useState(false);
 	const glitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
+	const [isMuted, setIsMuted] = useState(true);
+	const [hasInteracted, setHasInteracted] = useState(false);
 
 	// Trigger random glitches
 	useEffect(() => {
@@ -44,9 +47,157 @@ export default function Home() {
 		};
 	}, []);
 
+	// Play static sound when component mounts
+	useEffect(() => {
+		// Create audio element if it doesn't exist
+		if (!audioRef.current) {
+			audioRef.current = new Audio('/static.mp3');
+			audioRef.current.volume = 0.3; // Set volume to 30%
+			audioRef.current.loop = true; // Loop the audio
+		}
+
+		// Play the audio if user has interacted
+		const playAudio = async () => {
+			try {
+				if (audioRef.current && hasInteracted) {
+					await audioRef.current.play();
+				}
+			} catch (error) {
+				console.error('Audio playback failed:', error);
+			}
+		};
+
+		// Try to play audio if user has interacted
+		playAudio();
+
+		// Cleanup function to pause audio when component unmounts
+		return () => {
+			if (audioRef.current) {
+				audioRef.current.pause();
+				audioRef.current.currentTime = 0;
+			}
+		};
+	}, [hasInteracted]);
+
+	// Handle mute/unmute
+	useEffect(() => {
+		if (audioRef.current) {
+			audioRef.current.muted = isMuted;
+		}
+	}, [isMuted]);
+
+	// Toggle mute/unmute
+	const toggleMute = async () => {
+		// Mark as interacted when user clicks the mute button
+		if (!hasInteracted) {
+			setHasInteracted(true);
+		}
+
+		setIsMuted(!isMuted);
+
+		// If we're unmuting, try to play (in case it was blocked initially)
+		if (isMuted && audioRef.current) {
+			try {
+				await audioRef.current.play();
+			} catch (error) {
+				console.error('Audio playback failed:', error);
+			}
+		}
+	};
+
+	// Handle user interaction
+	const handleInteraction = async () => {
+		if (!hasInteracted) {
+			setHasInteracted(true);
+
+			// Try to play audio after user interaction
+			if (audioRef.current && !isMuted) {
+				try {
+					await audioRef.current.play();
+				} catch (error) {
+					console.error('Audio playback failed:', error);
+				}
+			}
+		}
+	};
+
 	return (
-		<div className='h-screen relative'>
+		<div className='h-screen relative' onClick={handleInteraction}>
 			<div className='p-8 bg-black/10 h-screen w-full flex items-center justify-center z-10 relative'>
+				{/* Audio control button */}
+				<motion.button
+					className='absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 text-white/80 hover:bg-black/70 transition-colors'
+					onClick={toggleMute}
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ delay: 1 }}
+					title={isMuted ? 'Unmute' : 'Mute'}
+				>
+					{isMuted ? (
+						<svg
+							xmlns='http://www.w3.org/2000/svg'
+							width='20'
+							height='20'
+							viewBox='0 0 24 24'
+							fill='none'
+							stroke='currentColor'
+							strokeWidth='2'
+							strokeLinecap='round'
+							strokeLinejoin='round'
+						>
+							<path d='M11 5L6 9H2v6h4l5 4V5z'></path>
+							<line x1='23' y1='9' x2='17' y2='15'></line>
+							<line x1='17' y1='9' x2='23' y2='15'></line>
+						</svg>
+					) : (
+						<svg
+							xmlns='http://www.w3.org/2000/svg'
+							width='20'
+							height='20'
+							viewBox='0 0 24 24'
+							fill='none'
+							stroke='currentColor'
+							strokeWidth='2'
+							strokeLinecap='round'
+							strokeLinejoin='round'
+						>
+							<polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'></polygon>
+							<path d='M15.54 8.46a5 5 0 0 1 0 7.07'></path>
+							<path d='M19.07 4.93a10 10 0 0 1 0 14.14'></path>
+						</svg>
+					)}
+				</motion.button>
+
+				{/* Audio prompt for first-time visitors */}
+				{!hasInteracted && (
+					<motion.div
+						className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-black/80 p-4 rounded-lg text-white text-center max-w-xs'
+						initial={{ opacity: 0, scale: 0.9 }}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ delay: 2, duration: 0.5 }}
+						exit={{ opacity: 0, scale: 0.9 }}
+					>
+						<p className='text-sm font-mono mb-2'>Click anywhere to experience with audio</p>
+						<div className='flex justify-center space-x-1'>
+							{[1, 2, 3].map((i) => (
+								<motion.div
+									key={i}
+									className='w-1.5 h-1.5 bg-green-500 rounded-full'
+									animate={{
+										opacity: [0.3, 1, 0.3],
+										scale: [0.8, 1.2, 0.8],
+									}}
+									transition={{
+										duration: 1.5,
+										repeat: Infinity,
+										delay: i * 0.2,
+									}}
+								/>
+							))}
+						</div>
+					</motion.div>
+				)}
+
 				{/* Main container with thinner border and subtle shadow */}
 				<motion.div
 					className='p-8 bg-black/90 rounded-md relative overflow-hidden shadow-lg max-w-lg w-full'
