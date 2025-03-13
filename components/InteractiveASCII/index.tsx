@@ -1,35 +1,26 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import { throttle } from 'lodash';
 
 interface AsciiChar {
 	x: number;
 	y: number;
-	originalX: number;
-	originalY: number;
 	char: string;
-	opacity: number;
 	color: string;
+	baseOpacity: number;
 }
 
 interface InteractiveASCIIProps {
 	ASCII_ART: string;
-	rectangleWidthFactor?: number;
-	fullScreenRectangle?: boolean;
-	baseInfluenceSize?: number;
-	maxAttractionDistance?: number;
-	colorIntensityThreshold?: number;
 	colors?: string[];
-	mouseInfluence?: number; // How strongly the mouse pulls characters
+	cursorSquareWidth?: number;
+	cursorSquareHeight?: number;
+	fps?: number;
 }
 
 const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 	ASCII_ART,
-	rectangleWidthFactor = 1,
-	fullScreenRectangle = false,
-	baseInfluenceSize = 500,
-	maxAttractionDistance = 50,
-	colorIntensityThreshold = 0.5,
 	colors = [
 		'rgba(255, 105, 180, 1)', // Hot pink
 		'rgba(0, 255, 255, 1)', // Cyan
@@ -39,216 +30,255 @@ const InteractiveASCII: React.FC<InteractiveASCIIProps> = ({
 		'rgba(255, 165, 0, 1)', // Orange
 		'rgba(0, 191, 255, 1)', // Deep sky blue
 	],
-	mouseInfluence = 0.2, // Increased default mouse influence for more noticeable effect
+	cursorSquareWidth = 1500,
+	cursorSquareHeight = 1500,
+	fps = 30,
 }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	// Use state for mouse position to ensure component updates when mouse moves
-	const [mousePos, setMousePos] = useState(() => ({
-		x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0,
-		y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0,
-	}));
-	const [isMouseInCanvas, setIsMouseInCanvas] = useState(false);
+	const charsRef = useRef<AsciiChar[]>([]);
+	const animationFrameIdRef = useRef<number>(0);
+	const lastFrameTimeRef = useRef<number>(0);
+	const frameIntervalRef = useRef<number>(1000 / fps);
+	const mousePosRef = useRef({ x: 0, y: 0 });
+	const isMouseInCanvasRef = useRef(false);
+	const canvasSizeRef = useRef({ width: 0, height: 0 });
 
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+	// Pre-compute colors array for better performance
+	const colorCache = useMemo(() => colors, [colors]);
 
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return;
+	// Memoized function to get random color
+	const getRandomColor = useCallback(() => {
+		return colorCache[Math.floor(Math.random() * colorCache.length)];
+	}, [colorCache]);
 
-		let animationFrameId: number;
-
-		const resizeCanvas = () => {
-			if (canvas) {
-				canvas.width = window.innerWidth;
-				canvas.height = window.innerHeight;
-			}
-		};
-		resizeCanvas();
-
-		// Rectangle parameters
-		const rectangleWidth = fullScreenRectangle ? window.innerWidth : window.innerWidth / rectangleWidthFactor;
-
-		const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
-		const asciiChars: AsciiChar[] = [];
-
-		const initAsciiChars = () => {
-			ctx.font = '14px monospace';
-			const lines = ASCII_ART.split('\n');
-			const charWidth = ctx.measureText('M').width;
+	// Initialize ASCII characters - only run when canvas size changes
+	const initAsciiChars = useCallback(
+		(width: number, height: number) => {
+			const charWidth = 8; // Approximate width of monospace character
 			const lineHeight = 10;
 
-			const cols = Math.ceil(canvas.width / charWidth);
-			const rows = Math.ceil(canvas.height / lineHeight);
+			const cols = Math.ceil(width / charWidth);
+			const rows = Math.ceil(height / lineHeight);
 			const startX = 0;
 			const startY = lineHeight;
+
+			const lines = ASCII_ART.split('\n');
+			const chars: AsciiChar[] = [];
 
 			for (let i = 0; i < rows; i++) {
 				const line = lines[i % lines.length];
 				for (let j = 0; j < cols; j++) {
-					const char = line[j % line.length];
+					const charIndex = j % line.length;
+					const char = line[charIndex];
 					if (char !== ' ') {
 						const x = startX + j * charWidth;
 						const y = startY + i * lineHeight;
-						asciiChars.push({
+						chars.push({
 							x,
 							y,
-							originalX: x,
-							originalY: y,
 							char,
-							opacity: 0.1,
-							color: 'rgba(255, 255, 255, 0.1)',
+							color: 'rgba(255, 255, 255, 0.3)',
+							baseOpacity: 0.3,
 						});
 					}
 				}
 			}
-		};
+			return chars;
+		},
+		[ASCII_ART]
+	);
 
-		initAsciiChars();
+	// Update canvas size and reinitialize characters
+	const updateCanvasSize = useCallback(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
 
-		const drawCityscape = () => {
-			ctx.font = '12px monospace';
-			asciiChars.forEach((char) => {
-				ctx.fillStyle = char.color;
-				ctx.fillText(char.char, char.x, char.y);
-			});
-		};
+		const width = window.innerWidth;
+		const height = window.innerHeight;
 
-		// Animation time tracking
-		const startTime = Date.now();
+		// Only update if dimensions actually changed
+		if (width !== canvasSizeRef.current.width || height !== canvasSizeRef.current.height) {
+			canvas.width = width;
+			canvas.height = height;
+			canvasSizeRef.current = { width, height };
+			charsRef.current = initAsciiChars(width, height);
+		}
+	}, [initAsciiChars]);
 
-		const animate = () => {
-			const currentTime = Date.now();
-			const elapsedTime = (currentTime - startTime) / 1000; // in seconds
+	// Throttled resize handler - no dependencies on state
+	const handleResize = useCallback(
+		throttle(() => {
+			updateCanvasSize();
+		}, 200), // Throttle resize events heavily
+		[updateCanvasSize]
+	);
 
-			ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
+	// Throttled mouse move handler to reduce event processing
+	const handleMouseMove = useCallback(
+		throttle((e: MouseEvent) => {
+			mousePosRef.current = { x: e.clientX, y: e.clientY };
+			isMouseInCanvasRef.current = true;
+		}, 16), // ~60fps throttle rate for mouse movement
+		[]
+	);
 
-			drawCityscape();
-
-			// Calculate rectangle position - now based on time instead of mouse
-			let rectangleX = 0;
-			if (!fullScreenRectangle) {
-				// Move rectangle back and forth across the screen based on time
-				const oscillation = Math.sin(elapsedTime * 0.5) * 0.5 + 0.5; // Value between 0 and 1
-				rectangleX = oscillation * (canvas.width - rectangleWidth);
+	// Throttled touch move handler
+	const handleTouchMove = useCallback(
+		throttle((e: TouchEvent) => {
+			if (e.touches.length > 0) {
+				mousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+				isMouseInCanvasRef.current = true;
 			}
+		}, 16),
+		[]
+	);
 
-			// Update ASCII characters
-			asciiChars.forEach((char) => {
-				const isInRectangle = fullScreenRectangle || (char.originalX >= rectangleX && char.originalX <= rectangleX + rectangleWidth);
+	// Effect to initialize canvas and handle resize
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
 
-				if (isInRectangle) {
-					// Calculate influence factor
-					let influenceFactor = 1;
-					if (!fullScreenRectangle) {
-						const distanceFromCenter = Math.abs(rectangleX + rectangleWidth / 2 - char.originalX);
-						influenceFactor = 1 - distanceFromCenter / (rectangleWidth / 2);
-						influenceFactor = Math.max(0, Math.min(1, influenceFactor)); // Clamp between 0 and 1
-					}
+		// Initial canvas setup
+		updateCanvasSize();
 
-					// Update opacity and color
-					const newOpacity = Math.min(1, 0.1 + influenceFactor * 1);
-					char.opacity = newOpacity;
-					char.color = newOpacity > colorIntensityThreshold ? getRandomColor() : `rgba(255, 255, 255, ${char.opacity})`;
+		// Add resize listener
+		window.addEventListener('resize', handleResize);
 
-					// Base animation using time
-					const waveX = Math.sin(elapsedTime + char.originalX * 0.01) * maxAttractionDistance * 0.2;
-					const waveY = Math.cos(elapsedTime + char.originalY * 0.01) * maxAttractionDistance * 0.2;
-
-					// Calculate mouse influence if mouse is in canvas
-					let mouseX = 0;
-					let mouseY = 0;
-
-					if (isMouseInCanvas && mouseInfluence > 0) {
-						// Calculate distance to mouse
-						const dx = mousePos.x - char.originalX;
-						const dy = mousePos.y - char.originalY;
-						const distance = Math.sqrt(dx * dx + dy * dy);
-
-						if (distance < baseInfluenceSize) {
-							// Calculate pull strength based on distance
-							const pullStrength = (1 - distance / baseInfluenceSize) * mouseInfluence;
-
-							// Apply pull toward mouse - increased strength for more noticeable effect
-							mouseX = dx * pullStrength;
-							mouseY = dy * pullStrength;
-						}
-					}
-
-					// Combine time-based animation with mouse influence
-					char.x = char.originalX + waveX * (1 - mouseInfluence) + mouseX * influenceFactor;
-					char.y = char.originalY + waveY * (1 - mouseInfluence) + mouseY * influenceFactor;
-				} else {
-					// Reset characters outside the rectangle
-					char.opacity = 0.1;
-					char.color = 'rgba(255, 255, 255, 0.1)';
-					char.x = char.originalX;
-					char.y = char.originalY;
-				}
-			});
-
-			animationFrameId = requestAnimationFrame(animate);
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			handleResize.cancel();
 		};
+	}, [handleResize, updateCanvasSize]);
 
-		animate();
+	// Effect for mouse/touch events
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
 
-		// Event handlers using React state setters
-		const handleMouseMove = (e: MouseEvent) => {
-			setMousePos({ x: e.clientX, y: e.clientY });
+		const handleMouseLeave = () => {
+			isMouseInCanvasRef.current = false;
 		};
 
 		const handleMouseEnter = () => {
-			setIsMouseInCanvas(true);
-		};
-
-		const handleMouseLeave = () => {
-			setIsMouseInCanvas(false);
-		};
-
-		const handleTouchMove = (e: TouchEvent) => {
-			if (e.touches.length > 0) {
-				setMousePos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-				setIsMouseInCanvas(true);
-			}
+			isMouseInCanvasRef.current = true;
 		};
 
 		const handleTouchEnd = () => {
-			setIsMouseInCanvas(false);
+			isMouseInCanvasRef.current = false;
 		};
 
-		// Use window for event listeners to capture mouse movement anywhere
+		// Add event listeners
 		window.addEventListener('mousemove', handleMouseMove);
-		window.addEventListener('mouseenter', handleMouseEnter);
-		window.addEventListener('mouseleave', handleMouseLeave);
-		window.addEventListener('touchmove', handleTouchMove);
+		canvas.addEventListener('mouseenter', handleMouseEnter);
+		canvas.addEventListener('mouseleave', handleMouseLeave);
+		window.addEventListener('touchmove', handleTouchMove, { passive: true });
 		window.addEventListener('touchend', handleTouchEnd);
-		window.addEventListener('resize', resizeCanvas);
-
-		// Debug - log to confirm event handlers are attached
-		console.log('Event handlers attached, mouseInfluence:', mouseInfluence);
 
 		return () => {
 			window.removeEventListener('mousemove', handleMouseMove);
-			window.removeEventListener('mouseenter', handleMouseEnter);
-			window.removeEventListener('mouseleave', handleMouseLeave);
+			canvas.removeEventListener('mouseenter', handleMouseEnter);
+			canvas.removeEventListener('mouseleave', handleMouseLeave);
 			window.removeEventListener('touchmove', handleTouchMove);
 			window.removeEventListener('touchend', handleTouchEnd);
-			window.removeEventListener('resize', resizeCanvas);
-			cancelAnimationFrame(animationFrameId);
+
+			// Clean up throttled functions
+			handleMouseMove.cancel();
+			handleTouchMove.cancel();
 		};
-	}, [
-		ASCII_ART,
-		rectangleWidthFactor,
-		fullScreenRectangle,
-		baseInfluenceSize,
-		maxAttractionDistance,
-		colorIntensityThreshold,
-		colors,
-		mouseInfluence,
-		mousePos,
-		isMouseInCanvas,
-	]);
+	}, [handleMouseMove, handleTouchMove]);
+
+	// Animation effect
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas || charsRef.current.length === 0) return;
+
+		const ctx = canvas.getContext('2d', { alpha: false }); // Disable alpha for better performance
+		if (!ctx) return;
+
+		// Pre-calculate square boundaries
+		const halfWidth = cursorSquareWidth / 2;
+		const halfHeight = cursorSquareHeight / 2;
+
+		const animate = (timestamp: number) => {
+			// Implement frame rate limiting
+			if (timestamp - lastFrameTimeRef.current < frameIntervalRef.current) {
+				animationFrameIdRef.current = requestAnimationFrame(animate);
+				return;
+			}
+
+			lastFrameTimeRef.current = timestamp;
+
+			// Clear with solid black (faster than using clearRect)
+			ctx.fillStyle = 'rgb(0, 0, 0)';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Get current mouse position from ref
+			const mousePos = mousePosRef.current;
+			const isMouseInCanvas = isMouseInCanvasRef.current;
+
+			// Calculate square boundaries only when needed
+			const squareLeft = mousePos.x - halfWidth;
+			const squareRight = mousePos.x + halfWidth;
+			const squareTop = mousePos.y - halfHeight;
+			const squareBottom = mousePos.y + halfHeight;
+
+			// Set font once outside the loop
+			ctx.font = '12px monospace';
+
+			// Draw ASCII characters with cursor-based color changes
+			const chars = charsRef.current;
+			const isActive = isMouseInCanvas;
+
+			for (let i = 0; i < chars.length; i++) {
+				const char = chars[i];
+
+				// Only process colors for characters in view and near cursor
+				const isInSquare = isActive && char.x >= squareLeft && char.x <= squareRight && char.y >= squareTop && char.y <= squareBottom;
+
+				if (isInSquare) {
+					// Calculate relative position within square (0-1 range for both x and y)
+					const relX = Math.abs((char.x - mousePos.x) / halfWidth);
+					const relY = Math.abs((char.y - mousePos.y) / halfHeight);
+
+					// Use the maximum of the relative X and Y positions
+					const distanceFactor = Math.max(relX, relY);
+
+					// The closer to the center of the square, the more likely to get a color
+					const colorProbability = 1 - distanceFactor;
+
+					// Reduce random calls by using a threshold
+					if (Math.random() < colorProbability * 0.75) {
+						// Reduced probability
+						char.color = getRandomColor();
+					} else {
+						// Fade to white as distance from center increases
+						const opacity = 0.3 + 0.7 * (1 - distanceFactor);
+						char.color = `rgba(255, 255, 255, ${opacity})`;
+					}
+				} else if (char.color !== `rgba(255, 255, 255, ${char.baseOpacity})`) {
+					// Reset to base color if outside square (only if needed)
+					char.color = `rgba(255, 255, 255, ${char.baseOpacity})`;
+				}
+
+				// Draw the character
+				ctx.fillStyle = char.color;
+				ctx.fillText(char.char, char.x, char.y);
+			}
+
+			animationFrameIdRef.current = requestAnimationFrame(animate);
+		};
+
+		animationFrameIdRef.current = requestAnimationFrame(animate);
+
+		return () => {
+			cancelAnimationFrame(animationFrameIdRef.current);
+		};
+	}, [getRandomColor, cursorSquareWidth, cursorSquareHeight]);
+
+	// Update frame rate if fps prop changes
+	useEffect(() => {
+		frameIntervalRef.current = 1000 / fps;
+	}, [fps]);
 
 	return (
 		<canvas
