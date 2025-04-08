@@ -4,9 +4,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import QuizSection from './components/QuizSection';
 import ChatSection from './components/ChatSection';
+import AnimatedBackground from './components/AnimatedBackground';
 
 // Animation configuration
 const DELAY_BETWEEN_ITEMS = 5; // seconds between each item
+
+// Dithering pattern styles
+const ditheringPattern = {
+	backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0)`,
+	backgroundSize: '20px 20px',
+	transition: 'background-color 0.3s ease',
+};
+
+// Dithering animation variants
+const ditherVariants = {
+	initial: {
+		opacity: 0.3,
+		scale: 1,
+	},
+	animate: {
+		opacity: [0.3, 0.5, 0.3],
+		scale: [1, 1.02, 1],
+		transition: {
+			duration: 4,
+			repeat: Infinity,
+			ease: 'easeInOut',
+		},
+	},
+};
 
 const commentaryItems = [
 	{
@@ -76,8 +101,9 @@ export default function Demo() {
 	}, []);
 
 	return (
-		<div className='flex items-center justify-center h-screen w-screen'>
-			<div className='w-full h-full p-4'>
+		<div className='flex items-center justify-center h-screen w-screen relative overflow-hidden'>
+			<AnimatedBackground />
+			<div className='w-full h-full p-4 relative z-10'>
 				<div className='bg-white/2 border border-white/10 rounded-2xl w-full h-full p-4'>
 					<div className='flex items-center justify-between'>
 						<div className='inline-flex px-3 space-x-2 items-center justify-center py-1 rounded-full bg-white/10'>
@@ -128,7 +154,7 @@ export default function Demo() {
 					</div>
 				</div>
 			</div>
-			<div className='w-full h-full bg-white/5 flex flex-col'>
+			<div className='w-full h-full bg-white/2 flex flex-col'>
 				<QuizSection />
 				<ChatSection />
 			</div>

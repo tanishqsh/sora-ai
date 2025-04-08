@@ -16,7 +16,7 @@ const BOT_MESSAGES = [
 	'Half-time stats: 65% possession, 8 shots on target.',
 ];
 
-const BOT_USERS = ['Ahed', 'Kamal', 'Tanishq'];
+const BOT_USERS = ['Ahed', 'Kamal', 'Tani'];
 
 const messageVariants = {
 	hidden: { opacity: 0, y: 20 },
