@@ -9,30 +9,6 @@ import AnimatedBackground from './components/AnimatedBackground';
 // Animation configuration
 const DELAY_BETWEEN_ITEMS = 5; // seconds between each item
 
-// Dithering pattern styles
-const ditheringPattern = {
-	backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0)`,
-	backgroundSize: '20px 20px',
-	transition: 'background-color 0.3s ease',
-};
-
-// Dithering animation variants
-const ditherVariants = {
-	initial: {
-		opacity: 0.3,
-		scale: 1,
-	},
-	animate: {
-		opacity: [0.3, 0.5, 0.3],
-		scale: [1, 1.02, 1],
-		transition: {
-			duration: 4,
-			repeat: Infinity,
-			ease: 'easeInOut',
-		},
-	},
-};
-
 const commentaryItems = [
 	{
 		time: "1'",
