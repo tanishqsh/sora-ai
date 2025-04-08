@@ -24,3 +24,20 @@ body {
 	background: var(--background);
 	color: var(--foreground);
 }
+
+@tailwind utilities;
+
+@keyframes circle-progress {
+	0% {
+		stroke-dashoffset: 100.53;
+	}
+	100% {
+		stroke-dashoffset: 0;
+	}
+}
+
+.circle-progress {
+	animation: circle-progress 5s linear infinite;
+	transform: rotate(-90deg);
+	transform-origin: center;
+}

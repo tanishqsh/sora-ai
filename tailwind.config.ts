@@ -13,27 +13,22 @@ const config: Config = {
 				// You can define your custom colors here
 			},
 			animation: {
-				glitch: 'glitch 3s infinite',
-				typing: 'typing 10s steps(60, end) infinite',
+				scroll: 'scroll 20s linear infinite',
+				'spin-slow': 'spin-slow 5s linear infinite',
+				progress: 'progress 5s linear forwards',
 			},
 			keyframes: {
-				glitch: {
-					'0%, 100%': { transform: 'translate(0)' },
-					'20%': { transform: 'translate(-2px, 2px)' },
-					'40%': { transform: 'translate(-2px, -2px)' },
-					'60%': { transform: 'translate(2px, 2px)' },
-					'80%': { transform: 'translate(2px, -2px)' },
-				},
-				typing: {
+				scroll: {
 					'0%': { transform: 'translateY(0)' },
-					'20%': { transform: 'translateY(0)' },
-					'25%': { transform: 'translateY(-24px)' },
-					'45%': { transform: 'translateY(-24px)' },
-					'50%': { transform: 'translateY(-48px)' },
-					'70%': { transform: 'translateY(-48px)' },
-					'75%': { transform: 'translateY(-72px)' },
-					'95%': { transform: 'translateY(-72px)' },
-					'100%': { transform: 'translateY(-96px)' },
+					'100%': { transform: 'translateY(-100%)' },
+				},
+				'spin-slow': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' },
+				},
+				progress: {
+					'0%': { strokeDashoffset: '100.53' },
+					'100%': { strokeDashoffset: '0' },
 				},
 			},
 		},
