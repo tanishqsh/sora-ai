@@ -109,7 +109,7 @@ export default function Demo() {
 								{commentaryItems
 									.slice(0, visibleItems)
 									.reverse()
-									.map((item, index) => (
+									.map((item) => (
 										<motion.p
 											key={item.time}
 											layout
