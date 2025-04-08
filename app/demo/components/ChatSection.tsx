@@ -105,34 +105,36 @@ export default function ChatSection() {
 						<span className='text-xs text-white/60'>Live</span>
 					</div>
 				</div>
-				<div className='flex-1 overflow-y-auto mb-4'>
-					<div className='flex flex-col-reverse min-h-full'>
-						<AnimatePresence mode='popLayout'>
-							{chatMessages.map((msg) => (
-								<motion.div
-									key={msg.id}
-									variants={messageVariants}
-									initial='hidden'
-									animate='visible'
-									exit='exit'
-									className='flex flex-col mb-4'
-								>
-									<div className='flex items-center space-x-2 mb-1 px-2'>
-										<span className='font-medium text-sm text-orange-500'>{msg.user}</span>
-										<span className='text-xs text-white/40'>•</span>
-										<span className='text-xs text-white/40'>{msg.timestamp}</span>
-									</div>
-									<div className='bg-white/5 hover:bg-white/10 transition-colors rounded-md px-2 py-2 max-w-[95%] self-start'>
-										<p className='text-sm text-white/90 leading-relaxed'>{msg.message}</p>
-									</div>
-									<div className='flex items-center space-x-3 mt-1 px-2'>
-										<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Reply</button>
-										<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Share</button>
-										<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Report</button>
-									</div>
-								</motion.div>
-							))}
-						</AnimatePresence>
+				<div className='flex-1 overflow-y-auto mb-4 relative'>
+					<div className='absolute inset-0 overflow-y-auto'>
+						<div className='flex flex-col-reverse min-h-full'>
+							<AnimatePresence mode='popLayout'>
+								{chatMessages.map((msg) => (
+									<motion.div
+										key={msg.id}
+										variants={messageVariants}
+										initial='hidden'
+										animate='visible'
+										exit='exit'
+										className='flex flex-col mb-4'
+									>
+										<div className='flex items-center space-x-2 mb-1 px-2'>
+											<span className='font-medium text-sm text-orange-500'>{msg.user}</span>
+											<span className='text-xs text-white/40'>•</span>
+											<span className='text-xs text-white/40'>{msg.timestamp}</span>
+										</div>
+										<div className='bg-white/5 hover:bg-white/10 transition-colors rounded-md px-2 py-2 max-w-[95%] self-start'>
+											<p className='text-sm text-white/90 leading-relaxed'>{msg.message}</p>
+										</div>
+										<div className='flex items-center space-x-3 mt-1 px-2'>
+											<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Reply</button>
+											<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Share</button>
+											<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Report</button>
+										</div>
+									</motion.div>
+								))}
+							</AnimatePresence>
+						</div>
 					</div>
 				</div>
 				<div className='flex space-x-2 bg-white/5 rounded-full p-1'>
