@@ -77,7 +77,7 @@ export default function Demo() {
 	}, []);
 
 	return (
-		<div className='flex items-center justify-center h-screen w-screen relative overflow-hidden'>
+		<div className='flex md:flex-row flex-col items-center justify-center md:h-screen w-screen relative overflow-hidden'>
 			<AnimatedBackground />
 			<div className='w-full h-full p-4 relative z-10'>
 				<div className='bg-white/2 border border-white/10 rounded-2xl w-full h-full p-4'>
