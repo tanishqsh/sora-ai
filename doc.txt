@@ -1,0 +1,140 @@
+# 📄 SCAI Football Detection Project Log
+
+## 🌟 Project Summary
+
+The goal of this project is to detect and track players, referees, the ball, goal posts, and goal lines in football match footage using a YOLOv8-based object detection model. The system will serve as part of an AI-powered football commentary platform. In later stages, the pipeline zooms in on the ball to perform refined event logic, such as passes and interceptions, using player and ball tracking.
+
+---
+
+## 💻 System Specs
+
+- **Laptop Model**: Lenovo Legion 9i
+- **GPU**: NVIDIA RTX 4090 Laptop GPU
+- **Driver Version**: Game Ready Driver 572.38
+- **CUDA Version**: 11.8
+- **PyTorch Version**: [Detected at runtime with YOLOv8 installation]
+- **RAM**: 64GB
+- **OS**: Windows 11
+- **YOLO Framework**: Ultralytics YOLOv8
+
+---
+
+## 📀 Video Source
+
+- **Match Name**: Al-Ittihad vs Al-Nasr
+- **Video Link**: [https://ok.ru/video/11085552224860](https://ok.ru/video/11085552224860)
+- **Download Tool**: yt-dlp
+- **Resolution**: 720p
+- **Download Path**: `C:/My Projects/SCAI/football_720p.mp4`
+
+---
+
+## 🎮 Frame Extraction
+
+- **Extracted From**: 24:37 to 35:12
+- **Interval**: Every 0.2 seconds
+- **Total Frames**: ~3000+
+- **Tool Used**: OpenCV in Jupyter Notebook
+- **Output Directory**: `C:/My Projects/SCAI/annotated_frames_improved/images` (train/val/test)
+
+---
+
+## 🕴️ Annotation Info
+
+- **Annotation Tool**: Roboflow
+- **Model Used**: Custom pre-trained model on 900 annotated frames
+- **Roboflow Dataset Name**: `my-first-project-n7fwf`
+
+- **Roboflow YAML (original)**:
+```yaml
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+nc: 5
+names: ['ball', 'goal post', 'Ittihad', 'Nasr', 'Referee']
+```
+
+---
+
+## 🤔 YOLOv8 Training
+
+- **Run Number**: 1 (Initial Training Run)
+- **Model Type**: yolov8m (medium)
+- **Epochs**: 30
+- **Batch Size**: 16
+- **Image Size**: 720x720
+- **Device**: GPU (device=0)
+- **Dataset**: Annotated frames from Roboflow export
+- **Data Path**: `C:/My Projects/SCAI/annotated_frames_improved/data.yaml`
+- **Train/Val/Test Split**: Full dataset used
+- **Augmentations Applied**: Horizontal and vertical flip
+- **Estimated Training Time**: ~55 hours total (~30 min/epoch)
+
+---
+
+## 📊 Evaluation Metrics & Model Output
+
+- **Best Weights Path**: `runs/detect/train7/weights/best.pt`
+- **Final Epoch Metrics**:
+  - Precision: 0.808
+  - Recall: 0.672
+  - mAP@0.5: 0.751
+  - mAP@0.5:0.95: 0.503
+- **Losses**:
+  - Box Loss: 1.05
+  - Classification Loss: 1.01
+  - DFL Loss: 1.06
+
+---
+
+## 📙 New Method B Segment (Focused Training)
+
+- **Segment Name**: `football_video_1_20_till_2_00.mp4`
+- **Duration**: 40 seconds
+- **Problem**: Ball was not detected consistently in this clip
+- **Fix Strategy**: Manual reannotation + retraining
+
+### Reannotation:
+- **Tool**: Roboflow
+- **FPS Selected**: 10 FPS (~400 frames)
+- **Frames Annotated**: 374 frames manually labeled for the ball
+- **Goal**: Create segment-specific fine-tuning dataset
+
+### Fine-Tuning:
+- **Base Model Used**: `runs/detect/train9/weights/best.pt`
+- **New Training Output**: `C:/My Projects/SCAI/Models/runs/detect/train15`
+- **Dataset Used**: 40s segment annotations only
+- **Purpose**: Improve detection performance of the ball in challenging frames (e.g. panning shots near goal posts)
+- **Action**: The original model was fine-tuned using the 40s annotated dataset to obtain the final fine-tuned model for more accurate ball tracking.
+
+### Train 15 Metrics:
+- **Epochs**: 15
+- **Final Epoch Metrics**:
+  - Precision: 0.867
+  - Recall: 0.901
+  - mAP@0.5: 0.917
+  - mAP@0.5:0.95: 0.761
+- **Per Class Performance**:
+  - Ball: P=0.771, R=0.823, mAP50=0.831, mAP50-95=0.636
+  - Goal Post: P=0.974, R=0.993, mAP50=0.993, mAP50-95=0.882
+  - Ittihad: P=0.866, R=0.891, mAP50=0.921, mAP50-95=0.755
+  - Nasr: P=0.856, R=0.896, mAP50=0.922, mAP50-95=0.769
+- **Training Time**: 0.139 hours (approx. 8 minutes)
+
+### Inference:
+- The fine-tuned model was used to run predictions on:
+  - The same 40-second clip for verification
+  - A separate 10-minute segment from the main match footage for full-scale analysis
+
+---
+
+## 🔊 Audio Transcription & Translation
+
+- **Tool Used**: OpenAI Whisper (Large model)
+- **Language**: Arabic
+- **Audio Clip**: `football_match_50_55_audio.mp3`
+- **Prompt Used**:
+  > هذه مباراة كرة قدم بين فريقي الاتحاد والنصر في الدوري السعودي. يتم ذكر أسماء اللاعبين مثل عبد الرزاق حمدالله، كريستيانو رونالدو، أحمد شراحيلي، وفهد المولد. التعليق يتضمن تمريرات، تسديدات، أهداف، وتسللات. المعلق يصف الحركات بشكل حماسي باللغة العربية.
+- **Output**: Transcription generated with Whisper using CPU and prompt guidance
+- **Post-processing**: Transcribed Arabic text was translated to English using ChatGPT
+
