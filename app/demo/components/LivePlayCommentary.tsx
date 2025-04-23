@@ -102,10 +102,20 @@ export default function LivePlayCommentary({ isPlaying, currentTime }: LivePlayC
 	const [visibleItems, setVisibleItems] = useState<number[]>([]);
 	const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
 	const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+	const backgroundAudioRef = useRef<HTMLAudioElement | null>(null);
 
-	// Preload all audio files
+	// Preload all audio files including background noise
 	useEffect(() => {
 		console.log('Loading audio files...');
+
+		// Initialize background audio
+		const bgAudio = new Audio('/commentary/bg.mp3');
+		bgAudio.preload = 'auto';
+		bgAudio.loop = true;
+		bgAudio.volume = 0.2; // Set background volume lower than commentary
+		backgroundAudioRef.current = bgAudio;
+
+		// Load commentary audio files
 		commentaryItems.forEach((item) => {
 			const audio = new Audio(item.audio);
 			audio.preload = 'auto';
@@ -125,6 +135,10 @@ export default function LivePlayCommentary({ isPlaying, currentTime }: LivePlayC
 
 		// Cleanup function
 		return () => {
+			if (backgroundAudioRef.current) {
+				backgroundAudioRef.current.pause();
+				backgroundAudioRef.current.src = '';
+			}
 			Object.values(audioRefs.current).forEach((audio) => {
 				audio.pause();
 				audio.src = '';
@@ -133,12 +147,42 @@ export default function LivePlayCommentary({ isPlaying, currentTime }: LivePlayC
 		};
 	}, []);
 
-	// Handle audio playback
+	// Handle audio playback including background noise
 	useEffect(() => {
 		console.log('Playback effect triggered:', { currentTime, isPlaying });
 
+		// Handle background audio
+		if (backgroundAudioRef.current) {
+			console.log('Background audio state:', {
+				isPlaying,
+				isPaused: backgroundAudioRef.current.paused,
+				currentTime: backgroundAudioRef.current.currentTime,
+			});
+
+			if (isPlaying) {
+				const playPromise = backgroundAudioRef.current.play();
+				if (playPromise !== undefined) {
+					playPromise.catch((error) => {
+						console.error('Background audio playback failed:', error);
+					});
+				}
+			} else {
+				try {
+					backgroundAudioRef.current.pause();
+					console.log('Background audio paused successfully');
+				} catch (error) {
+					console.error('Error pausing background audio:', error);
+				}
+			}
+		}
+
 		if (!isPlaying) {
 			console.log('Stopping all audio - not playing');
+			// Ensure background audio is paused
+			if (backgroundAudioRef.current && !backgroundAudioRef.current.paused) {
+				backgroundAudioRef.current.pause();
+			}
+			// Stop commentary audio
 			Object.values(audioRefs.current).forEach((audio) => {
 				audio.pause();
 				audio.currentTime = 0;
