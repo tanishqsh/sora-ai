@@ -4,19 +4,19 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BOT_MESSAGES = [
-	"Great goal! The striker's positioning was perfect.",
-	'Did you see that save? Absolutely incredible!',
-	'The midfield is really controlling the game now.',
-	'VAR check in progress...',
-	'That was a clear foul, should have been a yellow card.',
-	'The crowd is going wild after that play!',
-	"Substitution coming up - looks like they're bringing on fresh legs.",
-	'Tactical change from the manager, switching to a 4-3-3 formation.',
-	'Corner kick coming up - this could be dangerous!',
-	'Half-time stats: 65% possession, 8 shots on target.',
+	"Bento's distribution has been excellent today! 🧤",
+	'Sadio Mané is making those brilliant runs down the left! ⚡',
+	"Al-Nassr's attacking play is looking dangerous",
+	'Boushal is absolutely dominating that left flank 🔥',
+	'The crowd is going wild after that move by Mané!',
+	'We need more support in the box for these crosses',
+	'Al-Nassr building up the pressure now ⚽',
+	'What a defensive clearance! Just when we needed it',
+	'The midfield battle is intense right now',
+	'Looking for that perfect through ball to Mané',
 ];
 
-const BOT_USERS = ['Ahed', 'Kamal', 'Tani'];
+const BOT_USERS = ['Ahmed', 'Kamal', 'Tani', 'Hassan', 'Omar'];
 
 const messageVariants = {
 	hidden: { opacity: 0, y: 20 },
@@ -40,20 +40,20 @@ export default function ChatSection() {
 	const [chatMessages, setChatMessages] = useState([
 		{
 			id: 1,
-			user: 'Ahed',
-			message: 'What a goal by Al-Buraikan! 🔥',
+			user: 'Ahmed',
+			message: 'Bento looking solid between the posts today! 🧤',
 			timestamp: '2m ago',
 		},
 		{
 			id: 2,
-			user: 'Tanishq',
-			message: 'Iran needs to step up their defense',
+			user: 'Hassan',
+			message: 'That run from Sadio Mané was incredible!',
 			timestamp: '1m ago',
 		},
 		{
 			id: 3,
-			user: 'Kamal',
-			message: 'The atmosphere in the stadium is electric!',
+			user: 'Omar',
+			message: "Boushal's crosses are causing real problems! 🎯",
 			timestamp: 'Just now',
 		},
 	]);
