@@ -3,20 +3,56 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const BOT_MESSAGES = [
-	"Bento's distribution has been excellent today! 🧤",
-	'Sadio Mané is making those brilliant runs down the left! ⚡',
-	"Al-Nassr's attacking play is looking dangerous",
-	'Boushal is absolutely dominating that left flank 🔥',
-	'The crowd is going wild after that move by Mané!',
-	'We need more support in the box for these crosses',
-	'Al-Nassr building up the pressure now ⚽',
-	'What a defensive clearance! Just when we needed it',
-	'The midfield battle is intense right now',
-	'Looking for that perfect through ball to Mané',
+const chatMessages = [
+	{
+		start: 0.0,
+		end: 7.62,
+		user: 'Ahmed',
+		message: "Bento's distribution has been excellent today! 🧤",
+	},
+	{
+		start: 8.12,
+		end: 9.62,
+		user: 'Hassan',
+		message: 'Sadio Mané is making those brilliant runs down the left! ⚡',
+	},
+	{
+		start: 21.18,
+		end: 22.8,
+		user: 'Omar',
+		message: "Al-Nassr's attacking play is looking dangerous",
+	},
+	{
+		start: 23.9,
+		end: 26.94,
+		user: 'Kamal',
+		message: 'Boushal is absolutely dominating that left flank 🔥',
+	},
+	{
+		start: 27.08,
+		end: 29.94,
+		user: 'Tani',
+		message: 'The crowd is going wild after that move by Mané!',
+	},
+	{
+		start: 30.0,
+		end: 32.06,
+		user: 'Ahmed',
+		message: 'We need more support in the box for these crosses',
+	},
+	{
+		start: 32.34,
+		end: 36.58,
+		user: 'Hassan',
+		message: 'Al-Nassr building up the pressure now ⚽',
+	},
+	{
+		start: 37.06,
+		end: 39.2,
+		user: 'Omar',
+		message: 'What a defensive clearance! Just when we needed it',
+	},
 ];
-
-const BOT_USERS = ['Ahmed', 'Kamal', 'Tani', 'Hassan', 'Omar'];
 
 const messageVariants = {
 	hidden: { opacity: 0, y: 20 },
@@ -36,65 +72,32 @@ const messageVariants = {
 	},
 };
 
-export default function ChatSection() {
-	const [chatMessages, setChatMessages] = useState([
-		{
-			id: 1,
-			user: 'Ahmed',
-			message: 'Bento looking solid between the posts today! 🧤',
-			timestamp: '2m ago',
-		},
-		{
-			id: 2,
-			user: 'Hassan',
-			message: 'That run from Sadio Mané was incredible!',
-			timestamp: '1m ago',
-		},
-		{
-			id: 3,
-			user: 'Omar',
-			message: "Boushal's crosses are causing real problems! 🎯",
-			timestamp: 'Just now',
-		},
-	]);
+interface ChatSectionProps {
+	isPlaying: boolean;
+	currentTime: number;
+}
+
+export default function ChatSection({ isPlaying, currentTime }: ChatSectionProps) {
+	const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
 
 	useEffect(() => {
-		const addBotMessage = () => {
-			const randomMessage = BOT_MESSAGES[Math.floor(Math.random() * BOT_MESSAGES.length)];
-			const randomUser = BOT_USERS[Math.floor(Math.random() * BOT_USERS.length)];
-			const timestamp = 'Just now';
+		if (!isPlaying) {
+			setVisibleMessages([]);
+			return;
+		}
 
-			setChatMessages((prev) => {
-				const newMessages = [
-					...prev,
-					{
-						id: Date.now(),
-						user: randomUser,
-						message: randomMessage,
-						timestamp,
-					},
-				];
-				// Keep only the last 20 messages
-				return newMessages.slice(-20);
-			});
-		};
+		// Find all messages that should be visible at the current time
+		const newVisibleMessages = chatMessages.map((_, index) => index).filter((index) => chatMessages[index].start <= currentTime);
 
-		// Add initial bot messages
-		const initialMessages: NodeJS.Timeout[] = Array.from({ length: 3 }, (_, i) => {
-			return setTimeout(addBotMessage, (i + 1) * 2000);
-		});
+		// Only update if there are new messages to show
+		if (newVisibleMessages.length !== visibleMessages.length) {
+			setVisibleMessages(newVisibleMessages);
+		}
+	}, [currentTime, isPlaying]);
 
-		// Add random interval messages
-		const interval = setInterval(() => {
-			const randomDelay = Math.floor(Math.random() * 5000) + 3000; // 3-8 seconds
-			setTimeout(addBotMessage, randomDelay);
-		}, 10000); // Check every 10 seconds
-
-		return () => {
-			initialMessages.forEach(clearTimeout);
-			clearInterval(interval);
-		};
-	}, []);
+	if (!isPlaying) {
+		return null;
+	}
 
 	return (
 		<div className='h-1/2 p-6'>
@@ -109,30 +112,33 @@ export default function ChatSection() {
 					<div className='absolute inset-0 overflow-y-auto'>
 						<div className='flex flex-col-reverse min-h-full'>
 							<AnimatePresence mode='popLayout'>
-								{chatMessages.map((msg) => (
-									<motion.div
-										key={msg.id}
-										variants={messageVariants}
-										initial='hidden'
-										animate='visible'
-										exit='exit'
-										className='flex flex-col mb-4'
-									>
-										<div className='flex items-center space-x-2 mb-1 px-2'>
-											<span className='font-medium text-sm text-orange-500'>{msg.user}</span>
-											<span className='text-xs text-white/40'>•</span>
-											<span className='text-xs text-white/40'>{msg.timestamp}</span>
-										</div>
-										<div className='bg-white/5 hover:bg-white/10 transition-colors rounded-md px-2 py-2 max-w-[95%] self-start'>
-											<p className='text-sm text-white/90 leading-relaxed'>{msg.message}</p>
-										</div>
-										<div className='flex items-center space-x-3 mt-1 px-2'>
-											<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Reply</button>
-											<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Share</button>
-											<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Report</button>
-										</div>
-									</motion.div>
-								))}
+								{chatMessages
+									.filter((_, index) => visibleMessages.includes(index))
+									.reverse()
+									.map((msg) => (
+										<motion.div
+											key={msg.start}
+											variants={messageVariants}
+											initial='hidden'
+											animate='visible'
+											exit='exit'
+											className='flex flex-col mb-4'
+										>
+											<div className='flex items-center space-x-2 mb-1 px-2'>
+												<span className='font-medium text-sm text-orange-500'>{msg.user}</span>
+												<span className='text-xs text-white/40'>•</span>
+												<span className='text-xs text-white/40'>{msg.start.toFixed(1)}s</span>
+											</div>
+											<div className='bg-white/5 hover:bg-white/10 transition-colors rounded-md px-2 py-2 max-w-[95%] self-start'>
+												<p className='text-sm text-white/90 leading-relaxed'>{msg.message}</p>
+											</div>
+											<div className='flex items-center space-x-3 mt-1 px-2'>
+												<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Reply</button>
+												<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Share</button>
+												<button className='text-xs text-white/40 hover:text-white/60 transition-colors'>Report</button>
+											</div>
+										</motion.div>
+									))}
 							</AnimatePresence>
 						</div>
 					</div>

@@ -19,8 +19,8 @@ export default function Demo() {
 				<LivePlayCommentary isPlaying={isPlaying} currentTime={currentTime} />
 			</div>
 			<div className='w-full h-full bg-white/2 flex flex-col'>
-				<QuizSection />
-				<ChatSection />
+				<QuizSection isPlaying={isPlaying} currentTime={currentTime} />
+				<ChatSection isPlaying={isPlaying} currentTime={currentTime} />
 			</div>
 		</div>
 	);

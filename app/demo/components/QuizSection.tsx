@@ -5,9 +5,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const quizQuestions = [
 	{
-		question: 'Who scored the first goal in the match?',
-		options: ['Firas Al-Buraikan', 'Salem Al-Dawsari', 'Taremi', 'Azmoun'],
-		correctAnswer: 0,
+		start: 0,
+		end: 10, // 10 seconds to answer
+		question: "Rate Bento's distribution so far in the match?",
+		options: ['Excellent', 'Good', 'Average', 'Poor'],
+		correctAnswer: 0, // Excellent (based on commentary)
+	},
+	{
+		start: 15,
+		end: 25, // 10 seconds to answer
+		question: "Who's been dominating the left flank for Al-Nassr?",
+		options: ['Sadio Mané', 'Boushal', 'Talisca', 'Otavio'],
+		correctAnswer: 1, // Boushal (based on commentary)
 	},
 ];
 
@@ -57,29 +66,76 @@ const AnimatedNumber = ({ value }: { value: number }) => {
 	);
 };
 
-export default function QuizSection() {
+interface QuizSectionProps {
+	isPlaying: boolean;
+	currentTime: number;
+}
+
+export default function QuizSection({ isPlaying, currentTime }: QuizSectionProps) {
 	const [quizState, setQuizState] = useState<{
-		currentQuestion: number;
+		currentQuestion: number | null;
 		selectedAnswer: number | null;
 		showStats: boolean;
 		showLeaderboard: boolean;
 		showPointsWon: boolean;
+		timeRemaining: number | null;
 	}>({
-		currentQuestion: 0,
+		currentQuestion: null,
 		selectedAnswer: null,
 		showStats: false,
 		showLeaderboard: false,
 		showPointsWon: false,
+		timeRemaining: null,
 	});
 
 	const [dynamicStats, setDynamicStats] = useState(mockStats);
 
+	// Handle quiz timing and progression
+	useEffect(() => {
+		if (!isPlaying) {
+			setQuizState((prev) => ({
+				...prev,
+				currentQuestion: null,
+				selectedAnswer: null,
+				showStats: false,
+				timeRemaining: null,
+			}));
+			return;
+		}
+
+		// Find the current active question based on video time
+		const activeQuestionIndex = quizQuestions.findIndex((q) => currentTime >= q.start && currentTime <= q.end);
+
+		if (activeQuestionIndex !== -1) {
+			const question = quizQuestions[activeQuestionIndex];
+			const timeRemaining = Math.max(0, Math.floor(question.end - currentTime));
+
+			setQuizState((prev) => ({
+				...prev,
+				currentQuestion: activeQuestionIndex,
+				timeRemaining,
+				// Reset answer and stats if it's a new question
+				...(prev.currentQuestion !== activeQuestionIndex && {
+					selectedAnswer: null,
+					showStats: false,
+					showPointsWon: false,
+				}),
+			}));
+		} else {
+			setQuizState((prev) => ({
+				...prev,
+				currentQuestion: null,
+				timeRemaining: null,
+			}));
+		}
+	}, [currentTime, isPlaying]);
+
+	// Handle stats updates
 	useEffect(() => {
 		const interval = setInterval(() => {
 			setDynamicStats((prevStats) => ({
 				...prevStats,
 				answers: prevStats.answers.map((percent) => {
-					// Randomly adjust each answer percentage by ±5%
 					const change = Math.floor(Math.random() * 10) - 5;
 					return Math.max(0, Math.min(100, percent + change));
 				}),
@@ -101,18 +157,40 @@ export default function QuizSection() {
 					pointsBalance: prevStats.currentUser.pointsBalance,
 				},
 			}));
-		}, 3000); // Update every 3 seconds
+		}, 3000);
 
 		return () => clearInterval(interval);
 	}, []);
 
 	const handleAnswerSelect = (index: number) => {
-		setQuizState((prev) => ({ ...prev, selectedAnswer: index, showStats: true, showPointsWon: true }));
+		if (quizState.timeRemaining === 0) return;
+
+		setQuizState((prev) => ({
+			...prev,
+			selectedAnswer: index,
+			showStats: true,
+			showPointsWon: true,
+		}));
 	};
 
 	const toggleLeaderboard = () => {
 		setQuizState((prev) => ({ ...prev, showLeaderboard: !prev.showLeaderboard }));
 	};
+
+	if (!isPlaying || quizState.currentQuestion === null) {
+		return (
+			<div className='h-1/2 p-6'>
+				<div className='h-full flex flex-col'>
+					<div className='flex items-center justify-between mb-4'>
+						<h2 className='text-lg font-medium'>Live Match Quiz</h2>
+						<span className='text-sm text-white/60'>Waiting for next question...</span>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	const currentQuiz = quizQuestions[quizState.currentQuestion];
 
 	return (
 		<div className='h-1/2 p-6'>
@@ -120,6 +198,10 @@ export default function QuizSection() {
 				<div className='flex items-center justify-between mb-4'>
 					<div className='flex items-center space-x-4'>
 						<h2 className='text-lg font-medium'>Live Match Quiz</h2>
+						<div className='flex items-center space-x-2 text-sm bg-white/5 px-2 py-1 rounded-full'>
+							<span className='text-white/60'>Time</span>
+							<span className='font-medium text-orange-500'>{quizState.timeRemaining}s</span>
+						</div>
 						<div className='flex items-center space-x-2 text-sm bg-white/5 px-2 py-1 rounded-full'>
 							<span className='text-white/60'>Rank</span>
 							<span className='font-medium'>
@@ -150,7 +232,7 @@ export default function QuizSection() {
 				<div className='flex-1 flex flex-col justify-between'>
 					<div>
 						<div className='flex items-center justify-between mb-2'>
-							<p className='text-md text-white/80'>{quizQuestions[quizState.currentQuestion].question}</p>
+							<p className='text-md text-white/80'>{currentQuiz.question}</p>
 							<div className='flex items-center space-x-2 text-sm text-white/60'>
 								<span>
 									❤️ <AnimatedNumber value={dynamicStats.reactions.likes} />
@@ -164,12 +246,19 @@ export default function QuizSection() {
 							</div>
 						</div>
 						<div className='space-y-1'>
-							{quizQuestions[quizState.currentQuestion].options.map((option, index) => (
+							{currentQuiz.options.map((option, index) => (
 								<button
 									key={index}
 									onClick={() => handleAnswerSelect(index)}
+									disabled={quizState.timeRemaining === 0}
 									className={`w-full px-4 py-3 rounded-md text-sm text-left transition-colors relative ${
-										quizState.selectedAnswer === index ? 'bg-green-500/20 border border-green-500' : 'bg-white/2 hover:bg-white/5'
+										quizState.selectedAnswer === index
+											? index === currentQuiz.correctAnswer
+												? 'bg-green-500/20 border border-green-500'
+												: 'bg-red-500/20 border border-red-500'
+											: quizState.timeRemaining === 0 && index === currentQuiz.correctAnswer
+											? 'bg-green-500/20 border border-green-500'
+											: 'bg-white/2 hover:bg-white/5'
 									}`}
 								>
 									{option}
