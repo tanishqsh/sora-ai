@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 /*
  * Commentary Generation Process:
@@ -34,41 +34,49 @@ const commentaryItems = [
 		start: 0.0,
 		end: 7.62,
 		text: 'While legends dominate the field, the electrifying crowd atmosphere steals the show.',
+		audio: '/commentary/1.mp3',
 	},
 	{
 		start: 8.12,
 		end: 9.62,
 		text: 'The ball returns again to Bento.',
+		audio: '/commentary/2.mp3',
 	},
 	{
 		start: 21.18,
 		end: 22.8,
 		text: 'Bento to Boushal.',
+		audio: '/commentary/3.mp3',
 	},
 	{
 		start: 23.9,
 		end: 26.94,
 		text: 'A header finds Sadio Mane.',
+		audio: '/commentary/4.mp3',
 	},
 	{
 		start: 27.08,
 		end: 29.94,
 		text: "He keeps possession. Down the left, danger looms—it's Boushal.",
+		audio: '/commentary/5.mp3',
 	},
 	{
 		start: 30.0,
 		end: 32.06,
 		text: 'A dangerous run from Al-Nassr.',
+		audio: '/commentary/6.mp3',
 	},
 	{
 		start: 32.34,
 		end: 36.58,
 		text: 'Boushal pushes forward, waiting for support, and the ball is in a threatening position.',
+		audio: '/commentary/7.mp3',
 	},
 	{
 		start: 37.06,
 		end: 39.2,
 		text: "But there's no one there to finish that move.",
+		audio: '/commentary/8.mp3',
 	},
 ];
 
@@ -92,6 +100,91 @@ const itemVariants = {
 
 export default function LivePlayCommentary({ isPlaying, currentTime }: LivePlayCommentaryProps) {
 	const [visibleItems, setVisibleItems] = useState<number[]>([]);
+	const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
+	const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+
+	// Preload all audio files
+	useEffect(() => {
+		console.log('Loading audio files...');
+		commentaryItems.forEach((item) => {
+			const audio = new Audio(item.audio);
+			audio.preload = 'auto';
+
+			// Add load event listener
+			audio.addEventListener('loadeddata', () => {
+				console.log(`Audio loaded: ${item.audio}`);
+			});
+
+			// Add error event listener
+			audio.addEventListener('error', (e) => {
+				console.error(`Error loading audio ${item.audio}:`, e);
+			});
+
+			audioRefs.current[item.start] = audio;
+		});
+
+		// Cleanup function
+		return () => {
+			Object.values(audioRefs.current).forEach((audio) => {
+				audio.pause();
+				audio.src = '';
+			});
+			audioRefs.current = {};
+		};
+	}, []);
+
+	// Handle audio playback
+	useEffect(() => {
+		console.log('Playback effect triggered:', { currentTime, isPlaying });
+
+		if (!isPlaying) {
+			console.log('Stopping all audio - not playing');
+			Object.values(audioRefs.current).forEach((audio) => {
+				audio.pause();
+				audio.currentTime = 0;
+			});
+			setCurrentAudioKey(null);
+			return;
+		}
+
+		// Find the current audio segment that should be playing
+		const currentSegment = commentaryItems.find((item) => currentTime >= item.start && currentTime <= item.end);
+
+		console.log('Current segment:', currentSegment);
+
+		if (currentSegment) {
+			const newAudioKey = currentSegment.start.toString();
+
+			if (currentAudioKey !== newAudioKey) {
+				console.log('Attempting to play new audio segment:', currentSegment.audio);
+
+				// Stop current audio if any
+				if (currentAudioKey && audioRefs.current[currentAudioKey]) {
+					audioRefs.current[currentAudioKey].pause();
+					audioRefs.current[currentAudioKey].currentTime = 0;
+				}
+
+				// Play new audio
+				const audio = audioRefs.current[newAudioKey];
+				if (audio) {
+					audio.currentTime = Math.max(0, currentTime - currentSegment.start);
+					audio.play().catch((error) => {
+						console.error('Audio playback failed:', error);
+					});
+					setCurrentAudioKey(newAudioKey);
+				} else {
+					console.error('Audio element not found for key:', newAudioKey);
+				}
+			}
+		} else {
+			// No current segment, stop any playing audio
+			if (currentAudioKey && audioRefs.current[currentAudioKey]) {
+				audioRefs.current[currentAudioKey].pause();
+				audioRefs.current[currentAudioKey].currentTime = 0;
+				setCurrentAudioKey(null);
+			}
+		}
+	}, [currentTime, isPlaying, currentAudioKey]);
 
 	useEffect(() => {
 		if (!isPlaying) {
